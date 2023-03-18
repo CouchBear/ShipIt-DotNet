@@ -32,8 +32,8 @@ namespace ShipIt.Controllers
             return new EmployeeResponse(employee);
         }
 
-        [HttpGet("{employeeId}")]
-        public EmployeeResponse GetById([FromQuery] int employeeId)
+        [HttpGet("id/{employeeId}")]
+        public EmployeeResponse GetById([FromRoute] int employeeId)
         {
             Log.Info($"Looking up employee by ID: {employeeId}");
 

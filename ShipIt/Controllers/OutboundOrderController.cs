@@ -1,8 +1,8 @@
 ﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
- using Microsoft.AspNetCore.Mvc;
- using ShipIt.Exceptions;
+using Microsoft.AspNetCore.Mvc;
+using ShipIt.Exceptions;
 using ShipIt.Models.ApiModels;
 using ShipIt.Repositories;
 
@@ -22,9 +22,9 @@ namespace ShipIt.Controllers
             _productRepository = productRepository;
         }
 
-       
+
         [HttpPost("")]
-        public int Post([FromBody] OutboundOrderRequestModel request)
+        public TruckResponse Post([FromBody] OutboundOrderRequestModel request)
         {
             Log.Info(String.Format("Processing outbound order: {0}", request));
 
@@ -96,14 +96,49 @@ namespace ShipIt.Controllers
 
             _stockRepository.RemoveStock(request.WarehouseId, lineItems);
 
-         
-            double totalWeight=0;
-            double maxWeight=2000;
+
+          double totalWeight=0;
+            double maxWeight = 2000;
+            // foreach (var lineItem in lineItems)
+            // {var product = productDataModels.FirstOrDefault(p => p.Id.Equals(lineItem.ProductId));
+            //     totalWeight += (product.Weight)*(lineItem.Quantity);
+            // }
+            // int truckCount=Convert.ToInt32(totalWeight/maxWeight)+1;
+
+
+
+            //create allItems list of product and weight
+            var allItems = new List<SingleItem>();
+
             foreach (var lineItem in lineItems)
-            {var product = productDataModels.FirstOrDefault(p => p.Id.Equals(lineItem.ProductId));
-                totalWeight += (product.Weight)*(lineItem.Quantity);
+            {
+                var product = productDataModels.FirstOrDefault(p => p.Id.Equals(lineItem.ProductId));
+                var singleItem = new SingleItem(product, product.Weight * lineItem.Quantity);
+                allItems.Add(singleItem);
             }
-            return Convert.ToInt32(totalWeight/maxWeight);
+            allItems.Sort();
+            //a list of items in one truck
+            List<SingleItem> truckItemList = new List<SingleItem>();
+            List<Truck> truckList = new List<Truck>();
+
+
+            //allocate items in List allItems to trucks
+            while (allItems.Count > 0)
+            {totalWeight=0;
+                for (int i = 0; i < allItems.Count; i++)
+                {
+                    if (allItems[i].Weight + totalWeight <= maxWeight)
+                    {
+                        truckItemList.Add(allItems[i]);
+                        allItems.Remove(allItems[i]);
+                    }
+                }
+                //Truck has Id and a list of singleItems
+                Truck newTruck = new Truck(truckItemList);
+                truckList.Add(newTruck);
+             }
+             return new TruckResponse(truckList);
+
         }
     }
 }
